@@ -10,3 +10,25 @@ type Info struct {
 	Capital    string   `json:"capital"`
 	Cities     []string `json:"cities"`
 }
+
+type YearlyPopulation struct {
+	Year       int `json:"year"`
+	Population int `json:"population"`
+}
+
+type Population struct {
+	Values []YearlyPopulation `json:"values"`
+}
+
+type IsoInformation struct {
+	Name string `json:"name"`
+	Iso2 string `json:"Iso2"`
+	Iso3 string `json:"Iso3"`
+}
+
+type StatusInformation struct {
+	CountriesNowApi  string
+	RestCountriesApi string
+	Version          string
+	Uptime           string
+}

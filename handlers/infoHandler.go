@@ -26,6 +26,11 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 	countryCode := r.PathValue("countryCode")
+	if len(countryCode) != 2 {
+		http.Error(w, "Invalid country code. Country code should only consist of 2 characters.", http.StatusBadRequest)
+		return
+	}
+
 	limitStr := r.URL.Query().Get("limit")
 
 	limit := 10
@@ -40,6 +45,10 @@ func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 	infoResponse, err := getCountryInfo(countryCode, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
+		if err.Error() == "Error getting country info: 404 Not Found" {
+			suggestion := "Try using a valid country code. Example: /info/{countryCode}"
+			http.Error(w, suggestion, http.StatusNotFound)
+		}
 		return
 	}
 
