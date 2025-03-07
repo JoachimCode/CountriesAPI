@@ -44,6 +44,8 @@ func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 		parsedLimit, err := strconv.Atoi(limitStr)
 		if err == nil {
 			limit = parsedLimit
+		} else {
+			utility.StatusWriter(w, http.StatusBadRequest, "Invalid limit. Should be in the format: /info/{countryCode}?limit=10. Will show 10 cities by default.")
 		}
 	}
 

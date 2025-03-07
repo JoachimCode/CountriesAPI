@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-const LINEBREAK = "\n"
+const LINEBREAK = "<br>"
 
 // This method is used to handle the requests to the default endpoint.
 // It will return a message to the user, suggesting some possible endpoints to try.
