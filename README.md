@@ -1,34 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Country Info API Documentation</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2em;
-      line-height: 1.5;
-    }
-    code {
-      background: #f3f3f3;
-      padding: 0.2em 0.4em;
-      border-radius: 4px;
-    }
-    h1, h2, h3 {
-      margin-top: 1em;
-    }
-    pre {
-      background: #f9f9f9;
-      border-left: 4px solid #ccc;
-      padding: 1em;
-      overflow-x: auto;
-    }
-    hr {
-      margin: 2em 0;
-    }
-  </style>
-</head>
-<body>
 
 <h1>Country Info API</h1>
 <p>
@@ -122,7 +94,7 @@ Host: api.example.com
     <strong>404 Not Found:</strong> You may see this if the specified endpoint does not exist.
   </li>
   <li>
-    <strong>405 Method Not Allowed:</strong> You used an unsupported HTTP method on <code>/info</code>.
+    <strong>405 Method Not Allowed:</strong> You used an unsupported HTTP method
   </li>
   <li>
     <strong>500 Internal Server Error:</strong> An unexpected issue occurred on the server side
@@ -136,14 +108,6 @@ Host: api.example.com
   "StatusCode": 400
 }
 </code></pre>
-
-<hr>
-
-<h2>Contact &amp; Support</h2>
-<p>
-  For any questions, bug reports, or suggestions, please contact us at 
-  <a href="mailto:support@example.com">support@example.com</a>.
-</p>
 
 </body>
 </html>
