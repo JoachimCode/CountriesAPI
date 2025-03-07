@@ -1,31 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en">ll
+<body>
 
 <h1>Country Info API</h1>
 <p>
-  Welcome to the Country Info API! This service provides convenient endpoints to retrieve
-  a country’s core information, its flag, and a list of major cities.
+  Welcome to the Country Info API! This service provides endpoints to retrieve
+  a country’s core details, its population, and a quick status overview of the API itself.
 </p>
 
-<hr>
+<hr />
 
 <h2>Base URL</h2>
 <p>
-  <strong>Local (example):</strong> <code>http://localhost:8080</code><br/>
-  <strong>Production (example):</strong> <code>https://api.example.com</code>
+  <strong>Production:</strong> 
+  <code>https://prog20052025-bsio.onrender.com</code>
 </p>
 <p>
   All endpoints below are relative to the base URL.
 </p>
 
-<hr>
+<hr />
 
 <h2>Endpoints</h2>
 
-<h3>1. <code>GET /info/<em>{countryCode}</em></code></h3>
+<h3>1. <code>GET /countryinfo/v1/info/<em>{countryCode}</em></code></h3>
 <p>
-  Retrieves a JSON object of country information, including:
+  Retrieves a JSON object of detailed country information:
 </p>
 <ul>
   <li>Country name</li>
@@ -35,22 +35,25 @@
   <li>Borders</li>
   <li>Capital</li>
   <li>Flag</li>
-  <li>List of cities</li>
+  <li>List of major cities (limited by <code>limit</code> parameter)</li>
 </ul>
 
 <p><strong>Path parameter:</strong></p>
 <ul>
-  <li><code>countryCode</code> – An ISO 2-letter country code (e.g., <code>US</code>, <code>NO</code>, <code>FR</code>).</li>
+  <li><code>countryCode</code> – A 2-letter ISO code (e.g. <code>US</code>, <code>NO</code>, <code>FR</code>).</li>
 </ul>
 
 <p><strong>Query parameter (optional):</strong></p>
 <ul>
-  <li><code>limit</code> – Integer indicating how many cities to return. Defaults to 10.</li>
+  <li>
+    <code>limit</code> – Integer for how many cities to return 
+    (<em>default</em> = 10).
+  </li>
 </ul>
 
 <p><strong>Example Request:</strong></p>
-<pre><code>GET /info/US?limit=5
-Host: api.example.com
+<pre><code>GET /countryinfo/v1/info/US?limit=5
+Host: prog20052025-bsio.onrender.com
 </code></pre>
 
 <p><strong>Example Response:</strong></p>
@@ -66,48 +69,84 @@ Host: api.example.com
 }
 </code></pre>
 
-<hr>
+<hr />
 
-<h2>Response Fields</h2>
+
+<h3>2. <code>GET /countryinfo/v1/population/<em>{countryCode}</em></code></h3>
+<p>
+  Returns a JSON object containing only the population information for the specified country.
+</p>
+
+<p><strong>Path parameter:</strong></p>
 <ul>
-  <li><strong>Name</strong>: Common name of the country.</li>
-  <li><strong>Continents</strong>: Array of continents the country spans.</li>
-  <li><strong>Population</strong>: Total population.</li>
-  <li><strong>Languages</strong>: Array of official/common languages.</li>
-  <li><strong>Borders</strong>: Array of country codes for neighboring countries.</li>
-  <li><strong>Capital</strong>: Name of the capital city.</li>
-  <li><strong>Cities</strong>: List of major cities in that country (limited by <code>limit</code>).</li>
-  <li><strong>Flag</strong>: URL or base64 data representing the country’s flag.</li>
+  <li><code>countryCode</code> – A 2-letter ISO code (e.g. <code>US</code>, <code>NO</code>, <code>FR</code>).</li>
 </ul>
 
-<hr>
+<p><strong>Example Request:</strong></p>
+<pre><code>GET /countryinfo/v1/population/US
+Host: prog20052025-bsio.onrender.com
+</code></pre>
+
+<p><strong>Example Response:</strong></p>
+<pre><code>{
+  "Country": "United States",
+  "Population": 331002651
+}
+</code></pre>
+
+<hr />
+
+
+<h3>3. <code>GET /countryinfo/v1/status</code></h3>
+<p>
+  Returns a JSON object with general information about the API's status (e.g., version, uptime, or a simple "OK" message).
+</p>
+
+<p><strong>Example Request:</strong></p>
+<pre><code>GET /countryinfo/v1/status
+Host: prog20052025-bsio.onrender.com
+</code></pre>
+
+<p><strong>Example Response:</strong></p>
+<pre><code>{
+  "Status": "OK",
+  "Version": "1.0.0",
+  "Uptime": "72h"
+}
+</code></pre>
+
+<hr />
 
 <h2>Error Handling</h2>
-<p>The API returns errors in a JSON structure with <code>StatusCode</code> and <code>Message</code> fields. Common scenarios include:</p>
-
-<ul>
-  <li>
-    <strong>400 Bad Request:</strong> Invalid country code (e.g., fewer/more than 2 letters),
-    or the external data source indicates a missing/invalid country.
-  </li>
-  <li>
-    <strong>404 Not Found:</strong> You may see this if the specified endpoint does not exist.
-  </li>
-  <li>
-    <strong>405 Method Not Allowed:</strong> You used an unsupported HTTP method
-  </li>
-  <li>
-    <strong>500 Internal Server Error:</strong> An unexpected issue occurred on the server side
-    or with upstream APIs.
-  </li>
-</ul>
-
-<p><strong>Example Error Response:</strong></p>
+<p>
+  The API returns errors in a JSON structure with <code>StatusCode</code> and <code>Message</code> fields, for example:
+</p>
 <pre><code>{
   "Message": "Invalid country code. Country code should only consist of 2 characters.",
   "StatusCode": 400
 }
 </code></pre>
+
+<p><strong>Common error codes:</strong></p>
+<ul>
+  <li>
+    <strong>400 Bad Request:</strong> The country code is invalid
+    (e.g. not exactly 2 letters), or the external data source indicates
+    a missing/invalid country.
+  </li>
+  <li>
+    <strong>404 Not Found:</strong> The endpoint does not exist
+    (e.g. a typo in the URL).
+  </li>
+  <li>
+    <strong>405 Method Not Allowed:</strong> Attempted an HTTP method other than GET on these endpoints.
+  </li>
+  <li>
+    <strong>500 Internal Server Error:</strong> An unexpected error occurred
+    on the server or with upstream data sources.
+  </li>
+</ul>
+
 
 </body>
 </html>
