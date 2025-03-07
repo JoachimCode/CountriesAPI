@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"assignment_1/utility"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,18 +16,26 @@ const countryInfoApi = "http://129.241.150.113:8080/v3.1/alpha"
 const countryFlagApi = "http://129.241.150.113:3500/api/v0.1/countries/flag/images"
 const citiesApi = "http://129.241.150.113:3500/api/v0.1/countries/cities"
 
+// This method is used to handle the requests to the /info endpoint.
+// It will return information about a country, including its flag and a list of cities.
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		handleInfoGetRequest(w, r)
 	default:
-		http.Error(w, "Rest Method: "+r.Method+" is not supported."+"Only"+http.MethodGet+" is supported.", http.StatusMethodNotAllowed)
+		utility.StatusWriter(w, http.StatusMethodNotAllowed, "Rest Method: "+r.Method+" is not supported. Only "+http.MethodGet+" is supported.")
 		return
 	}
 }
 
+// This method is used to handle the GET requests to the /info endpoint.
 func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 	countryCode := r.PathValue("countryCode")
+	if len(countryCode) != 2 {
+		utility.StatusWriter(w, http.StatusBadRequest, "Invalid country code. Country code should only consist of 2 characters.")
+		return
+	}
+
 	limitStr := r.URL.Query().Get("limit")
 
 	limit := 10
@@ -34,13 +44,21 @@ func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 		parsedLimit, err := strconv.Atoi(limitStr)
 		if err == nil {
 			limit = parsedLimit
+		} else {
+			utility.StatusWriter(w, http.StatusBadRequest, "Invalid limit. Should be in the format: /info/{countryCode}?limit=10. Will show 10 cities by default.")
 		}
 	}
 
 	infoResponse, err := getCountryInfo(countryCode, limit)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		if strings.Contains(err.Error(), "Bad request") {
+			utility.StatusWriter(w, http.StatusBadRequest, "Error: did not find country code")
+			return
+		} else {
+			utility.StatusWriter(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -49,18 +67,27 @@ func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 
 	err = encoder.Encode(infoResponse)
 	if err != nil {
-		http.Error(w, "Error encoding response.", http.StatusInternalServerError)
+		utility.StatusWriter(w, http.StatusInternalServerError, "Error encoding response")
+		return
 	}
 }
 
-func getCountryInfo(countryCode string, limit int) (Info, error) {
+// This method is used to fetch information about a country, including its flag and a list of cities.
+func getCountryInfo(countryCode string, limit int) (utility.Info, error) {
 	info, err := fetchCoreCountryInfo(countryCode)
 	if err != nil {
-		return Info{}, err
+		return utility.Info{}, err
 	}
 
-	info.Flag, _ = getCountryFlag(countryCode)
-	info.Cities, _ = fetchCities(info.Name, limit)
+	info.Flag, err = getCountryFlag(countryCode)
+	if err != nil {
+		return utility.Info{}, err
+	}
+
+	info.Cities, err = fetchCities(info.Name, limit)
+	if err != nil {
+		return utility.Info{}, err
+	}
 
 	if limit < len(info.Cities) {
 		info.Cities = info.Cities[:limit]
@@ -68,24 +95,27 @@ func getCountryInfo(countryCode string, limit int) (Info, error) {
 	return info, nil
 }
 
-func fetchCoreCountryInfo(countryCode string) (Info, error) {
+// This method is used to fetch core information about a country.
+func fetchCoreCountryInfo(countryCode string) (utility.Info, error) {
 	url := countryInfoApi + "/" + countryCode
 	client := http.Client{Timeout: 5 * time.Second}
-
+	startTime.Local().Location()
 	resp, err := client.Get(url)
 	if err != nil {
-		return Info{}, fmt.Errorf("Error getting country info: %v", err)
+		return utility.Info{}, fmt.Errorf("error getting country info: %v", err)
 	}
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return Info{}, fmt.Errorf("Error getting country info: %v", resp.Status)
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+		return utility.Info{}, fmt.Errorf("Bad request")
+	} else if resp.StatusCode != http.StatusOK {
+		return utility.Info{}, fmt.Errorf("error getting country info: %v", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return Info{}, fmt.Errorf("Error reading API response: %v", err)
+		return utility.Info{}, fmt.Errorf("error reading API response: %v", err)
 	}
 
 	var apiResponse []struct {
@@ -101,7 +131,7 @@ func fetchCoreCountryInfo(countryCode string) (Info, error) {
 
 	err = json.Unmarshal(body, &apiResponse)
 	if err != nil {
-		return Info{}, fmt.Errorf("Error parsing API response: %v", err)
+		return utility.Info{}, fmt.Errorf("error parsing API response: %v", err)
 	}
 
 	countryData := apiResponse[0]
@@ -118,7 +148,7 @@ func fetchCoreCountryInfo(countryCode string) (Info, error) {
 		capital = "Unknown"
 	}
 
-	info := Info{
+	info := utility.Info{
 		Name:       countryData.Name.Common,
 		Continents: countryData.Continents,
 		Population: countryData.Population,
@@ -132,6 +162,7 @@ func fetchCoreCountryInfo(countryCode string) (Info, error) {
 	return info, nil
 }
 
+// This method is used to fetch the flag of a country.
 func getCountryFlag(countryCode string) (string, error) {
 	url := countryFlagApi
 
@@ -144,31 +175,33 @@ func getCountryFlag(countryCode string) (string, error) {
 	}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return "", fmt.Errorf("Error marshalling flag request: %v", err)
+		return "", fmt.Errorf("error marshalling flag request: %v", err)
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("Error creating flag request: %v", err)
+		return "", fmt.Errorf("error creating flag request: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("Error getting flag: %v", err)
+		return "", fmt.Errorf("error getting flag: %v", err)
 	}
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Error getting flag: %v", resp.Status)
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+		return "", fmt.Errorf("Bad request")
+	} else if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("error getting country info: %v", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("Error reading flag response: %v", err)
+		return "", fmt.Errorf("error reading flag response: %v", err)
 	}
 
 	var apiResponse struct {
@@ -181,16 +214,17 @@ func getCountryFlag(countryCode string) (string, error) {
 
 	err = json.Unmarshal(body, &apiResponse)
 	if err != nil {
-		return "", fmt.Errorf("Error parsing flag response: %v", err)
+		return "", fmt.Errorf("error parsing flag response: %v", err)
 	}
 
 	if apiResponse.Error {
-		return "", fmt.Errorf("Error getting flag: %v", apiResponse.Msg)
+		return "", fmt.Errorf("error getting flag: %v", apiResponse.Msg)
 	}
 
 	return apiResponse.Data.Flag, nil
 }
 
+// This method is used to fetch a list of cities in a country.
 func fetchCities(countryFullName string, limit int) ([]string, error) {
 	url := citiesApi
 
@@ -199,31 +233,35 @@ func fetchCities(countryFullName string, limit int) ([]string, error) {
 	}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("Error marshalling city request: %v", err)
+		return nil, fmt.Errorf("error marshalling city request: %v", err)
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("Error creating city request: %v", err)
+		return nil, fmt.Errorf("error creating city request: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting cities: %v", err)
+		return nil, fmt.Errorf("error getting cities: %v", err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error getting cities: %v", resp.Status)
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+			return nil, fmt.Errorf("Bad request")
+		} else if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("error getting cities: %v", resp.Status)
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading cities response: %v", err)
+		return nil, fmt.Errorf("error reading cities response: %v", err)
 	}
 
 	var apiResponse struct {
@@ -234,11 +272,11 @@ func fetchCities(countryFullName string, limit int) ([]string, error) {
 
 	err = json.Unmarshal(body, &apiResponse)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing cities response: %v", err)
+		return nil, fmt.Errorf("error parsing cities response: %v", err)
 	}
 
 	if apiResponse.Error {
-		return nil, fmt.Errorf("Error getting cities: %v", apiResponse.Msg)
+		return nil, fmt.Errorf("error getting cities: %v", apiResponse.Msg)
 	}
 
 	return apiResponse.Data, nil
