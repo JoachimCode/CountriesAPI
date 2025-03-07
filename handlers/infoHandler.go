@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -47,9 +48,15 @@ func handleInfoGetRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	infoResponse, err := getCountryInfo(countryCode, limit)
+
 	if err != nil {
-		utility.StatusWriter(w, http.StatusInternalServerError, err.Error())
-		return
+		if strings.Contains(err.Error(), "Bad request") {
+			utility.StatusWriter(w, http.StatusBadRequest, "Error: did not find country code")
+			return
+		} else {
+			utility.StatusWriter(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -98,7 +105,9 @@ func fetchCoreCountryInfo(countryCode string) (utility.Info, error) {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+		return utility.Info{}, fmt.Errorf("Bad request")
+	} else if resp.StatusCode != http.StatusOK {
 		return utility.Info{}, fmt.Errorf("error getting country info: %v", resp.Status)
 	}
 
@@ -182,8 +191,10 @@ func getCountryFlag(countryCode string) (string, error) {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("error getting flag: %v", resp.Status)
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+		return "", fmt.Errorf("Bad request")
+	} else if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("error getting country info: %v", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -239,7 +250,11 @@ func fetchCities(countryFullName string, limit int) ([]string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error getting cities: %v", resp.Status)
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+			return nil, fmt.Errorf("Bad request")
+		} else if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("error getting cities: %v", resp.Status)
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
