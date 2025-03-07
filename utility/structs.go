@@ -17,6 +17,7 @@ type YearlyPopulation struct {
 }
 
 type Population struct {
+	Mean   int                `json:"mean"`
 	Values []YearlyPopulation `json:"values"`
 }
 

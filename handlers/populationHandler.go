@@ -82,11 +82,27 @@ func handlePopulationGetRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var sum, count int
+	for _, year := range populationResponse {
+		sum += year.Population
+		count++
+	}
+
+	mean := 0
+	if count > 0 {
+		mean = sum / count
+	}
+
+	population := utility.Population{
+		Mean:   mean,
+		Values: populationResponse,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	encoder := json.NewEncoder(w)
 
-	err = encoder.Encode(populationResponse)
+	err = encoder.Encode(population)
 	if err != nil {
 		utility.StatusWriter(w, http.StatusInternalServerError, "Error encoding response")
 		return
