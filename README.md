@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">ll
+<html lang="en">
 <body>
 
 <h1>Country Info API</h1>
@@ -35,7 +35,7 @@
   <li>Borders</li>
   <li>Capital</li>
   <li>Flag</li>
-  <li>List of major cities (limited by <code>limit</code> parameter)</li>
+  <li>List of cities (limited by <code>limit</code> parameter)</li>
 </ul>
 
 <p><strong>Path parameter:</strong></p>
@@ -74,7 +74,7 @@ Host: prog20052025-bsio.onrender.com
 
 <h3>2. <code>GET /countryinfo/v1/population/<em>{countryCode}</em></code></h3>
 <p>
-  Returns a JSON object containing only the population information for the specified country.
+  Returns a JSON object containing the mean the population information for the specified country.
 </p>
 
 <p><strong>Path parameter:</strong></p>
@@ -82,15 +82,26 @@ Host: prog20052025-bsio.onrender.com
   <li><code>countryCode</code> – A 2-letter ISO code (e.g. <code>US</code>, <code>NO</code>, <code>FR</code>).</li>
 </ul>
 
+<p><strong>Query parameter (optional):</strong></p>
+<ul>
+  <li>
+    <code>limit</code> – Integer for time period
+  </li>
+</ul>
+
+
 <p><strong>Example Request:</strong></p>
-<pre><code>GET /countryinfo/v1/population/US
+<pre><code>GET /countryinfo/v1/population/US?limit=2015-2016
 Host: prog20052025-bsio.onrender.com
 </code></pre>
 
 <p><strong>Example Response:</strong></p>
 <pre><code>{
-  "Country": "United States",
-  "Population": 331002651
+  "Mean": "5233364",
+  "Values": 
+    ["Year": 2015,  "population": 5188607]
+    ["Year": 2016,  "population": 5234519]
+    
 }
 </code></pre>
 
@@ -109,8 +120,9 @@ Host: prog20052025-bsio.onrender.com
 
 <p><strong>Example Response:</strong></p>
 <pre><code>{
-  "Status": "OK",
-  "Version": "1.0.0",
+  "CountriesNowApi": "200 OK",
+  "RestCountriesApi": "200 OK",
+  "Version": "v1.0"
   "Uptime": "72h"
 }
 </code></pre>
